@@ -68,6 +68,30 @@ bool Sphere::
 Intersection(Ray& ray) const
 {
     // TODO
+    // http://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
+    // a = D^2, b = 2D(O-C), c = |O - C|^2 - r^2
+    double a = ray.direction * ray.direction;
+    double b = (2 * ray.direction) * (ray.endpoint - center)); 
+    double c = (ray.endpoint - center) * (ray.endpoint - center) - radius*radius; 
+    double delta = b*b - 4 * a * c;
+
+    double x1, x2, t;
+
+    if (delta < 0)     // if delta < 0, no roots
+    {
+
+    }
+
+    else if (delta == 0) // if delta = 0, one root
+    {
+
+    }
+
+    else if (delta > 0) // if delta > 0, two roots
+    {
+
+    }
+
     return false;
 }
 
@@ -117,9 +141,17 @@ Closest_Intersection(Ray& ray)
 {
     // TODO: start
     // create a variable to hold the current closest object (initially infinity)
+    Object closestObj;
+    int numObjects = objects.size();
+
     // for each object in the scene
-    // if current object intersects with ray and distance is less than closest object,
+    for (int i=0; i < numObjects; i++)
+        // if current object intersects with ray and distance is less than closest object,
+        if (objects[i]->Intersection(ray))
+            cout << "Intersection!" << endl;
+
     // then update
+
     return 0;
 }
 
