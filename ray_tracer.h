@@ -450,7 +450,7 @@ public:
     TV focal_point; // where the image plane is located
     TV look_vector; // points from the position to the focal point - normalized
     TV vertical_vector; // point up in the image plane - normalized
-    TV horizontal_vector; // points to the right on the omage plane - normalized
+    TV horizontal_vector; // points to the right on the image plane - normalized
     Film film;
 
     Camera()

@@ -25,6 +25,7 @@ void Display()
 {
     glClear(GL_COLOR_BUFFER_BIT);
     if(world.camera.film.colors) glDrawPixels(WIDTH,HEIGHT,GL_RGBA,GL_UNSIGNED_INT_8_8_8_8,(GLvoid*)world.camera.film.colors);
+    glutSwapBuffers();
     glFlush();
 }
 //--------------------------------------------------------------------------------
@@ -37,7 +38,7 @@ void Handle_Idle()
 void Initialize_Opengl_And_Glut(int argc, char** argv)
 {
     glutInit(&argc,(char**)argv);
-    glutInitDisplayMode(GLUT_SINGLE|GLUT_RGBA);
+    glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
     glutInitWindowSize(WIDTH,HEIGHT);
     glutCreateWindow("Ray Tracer");
     glutDisplayFunc(Display);

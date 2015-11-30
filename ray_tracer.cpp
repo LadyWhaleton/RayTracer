@@ -39,6 +39,7 @@ Shade_Surface(const Ray& ray,const Object& intersection_object,const Vector_3D<d
     Vector_3D<double> color;
 
     // TODO: determine the color
+    // for i = 0 to numLights
 
     return color;
 }
@@ -47,7 +48,6 @@ Vector_3D<double> Reflective_Shader::
 Shade_Surface(const Ray& ray,const Object& intersection_object,const Vector_3D<double>& intersection_point,const Vector_3D<double>& same_side_normal) const
 {
     Vector_3D<double> color;
-
     // TODO: determine the color
 
     return color;
@@ -69,37 +69,50 @@ Intersection(Ray& ray) const
 {
     // TODO
     // http://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
+    // https://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter1.htm
+    // http://www.sfdm.scad.edu/faculty/mkesson/vsfx419/wip/best/winter12/jonathan_mann/raytracer.html
     // a = D^2, b = 2D(O-C), c = |O - C|^2 - r^2
-    double a = ray.direction * ray.direction;
-    double b = (2 * ray.direction) * (ray.endpoint - center)); 
-    double c = (ray.endpoint - center) * (ray.endpoint - center) - radius*radius; 
-    double delta = b*b - 4 * a * c;
+    double a = Vector_3D <double>::Dot_Product(ray.direction, ray.direction);
+    double b = 2 * Vector_3D <double>:: Dot_Product(ray.direction, ray.endpoint - center); 
+    double c = Vector_3D <double>::Dot_Product(ray.endpoint - center, ray.endpoint - center) - radius*radius; 
+    double discr = b*b - 4 * a * c;
 
-    double x1, x2, t;
-
-    if (delta < 0)     // if delta < 0, no roots
+    if (discr < 0)     // if discriminant < 0, no roots
+        return false;
+    
+    else
     {
+		double t1, t2, t; // these represent the solutions for t
+		t1 = -0.5 * (b + sqrt(discr)) / a;
+		t2 = -0.5 * (b - sqrt(discr)) / a;
+		
+		// find the smaller positive root and set that to t_max
+		if (t1 >= 0 && t2 < 0) // t1 is pos
+			t = t1;
+		else if (t1 < 0 && t2 >= 0) // t2 is pos
+			t = t2;
+		else if (t1 >= 0 && t2 >= 0)
+			t = min(t1, t2);
+        else 
+            return false;
+		
+        // t has to be bigger than small_t to register an intersection with a ray	
+		if (t > small_t)
+        {
+			ray.semi_infinite = false;
+            ray.t_max = t;
+            ray.current_object = this;  // set current object
+            return true;
+        }		
+	}
 
-    }
-
-    else if (delta == 0) // if delta = 0, one root
-    {
-
-    }
-
-    else if (delta > 0) // if delta > 0, two roots
-    {
-
-    }
-
-    return false;
+    return false;       
 }
 
 Vector_3D<double> Sphere::
 Normal(const Vector_3D<double>& location) const
 {
-    Vector_3D<double> normal;
-    // TODO: set the normal
+    Vector_3D<double> normal = location - center;
     normal.Normalize();
     return normal;
 }
@@ -110,6 +123,25 @@ bool Plane::
 Intersection(Ray& ray) const
 {
     // TODO
+    // https://www.cs.princeton.edu/courses/archive/fall00/cs426/lectures/raycast/sld017.htm
+    // http://www.prinmath.com/csci5229/Sp11/handouts/obj-ray-inter.pdf
+    // (a - o) * n / (d * n), o = endpoint, d = direction, n = normal
+    // x1 = a, which is some point on the plane
+    double top = Vector_3D<double>::Dot_Product(x1 - ray.endpoint, normal);
+    double bot = Vector_3D<double>::Dot_Product(ray.direction, normal);
+    double t = top / bot;
+    
+    // if t > 0, ray towards plane and will eventually intersect it
+    // // t has to be bigger than small_t to register an intersection with a ray
+    if (t > small_t)
+    {
+		ray.t_max = t;
+		ray.current_object = this;
+		ray.semi_infinite = false;
+		return true;
+	}
+    
+	// if t < 0, ray is away from plane and will never intersect	
     return false;
 }
 
@@ -125,8 +157,17 @@ Normal(const Vector_3D<double>& location) const
 Vector_3D<double> Camera::
 World_Position(const Vector_2D<int>& pixel_index)
 {
-    Vector_3D<double> result;
     // TODO 
+    // We are essentially converting screen/camera space to world space
+ 
+    // Need to get the grid location of pixel_index (x and y coords)
+    Vector_2D<double> gridPos = film.pixel_grid.X(pixel_index);
+    
+    // convert camera/screen coordinates (gridPosition) to world coordinates
+    Vector_3D<double> worldPos = horizontal_vector*gridPos.x + vertical_vector*gridPos.y;
+    
+    // focal point = eye vector (the origin) / the image plane
+    Vector_3D<double> result = focal_point + worldPos;
     
     return result;
 }
@@ -139,20 +180,17 @@ World_Position(const Vector_2D<int>& pixel_index)
 const Object* Render_World::
 Closest_Intersection(Ray& ray)
 {
+    //cout << "Looking for closest intersection!\n";
+
     // TODO: start
     // create a variable to hold the current closest object (initially infinity)
-    Object closestObj;
     int numObjects = objects.size();
 
     // for each object in the scene
     for (int i=0; i < numObjects; i++)
-        // if current object intersects with ray and distance is less than closest object,
-        if (objects[i]->Intersection(ray))
-            cout << "Intersection!" << endl;
+        objects[i]->Intersection(ray);
 
-    // then update
-
-    return 0;
+    return ray.current_object;
 }
 
 // set up the initial view ray and call 
@@ -160,8 +198,11 @@ void Render_World::
 Render_Pixel(const Vector_2D<int>& pixel_index)
 {
     // TODO: start
-    Ray ray; // TODO: set up the initial view ray here
-
+    // set up the initial view ray here
+    Ray ray (camera.position, camera.World_Position(pixel_index) - camera.position);
+	ray.t_max = FLT_MAX;
+    ray.semi_infinite = true;
+	
     Ray dummy_root;
     Vector_3D<double> color=Cast_Ray(ray,dummy_root);
     camera.film.Set_Pixel(pixel_index,Pixel_Color(color));
@@ -174,8 +215,14 @@ Cast_Ray(Ray& ray,const Ray& parent_ray)
 {
     // TODO: start
     Vector_3D<double> color;
+    const Object* closestObj = Closest_Intersection(ray);
 
-    // determine the color here
+    if (closestObj != NULL)
+    {
+        Vector_3D <double> pt = ray.Point(ray.t_max);
+        Vector_3D <double> n = closestObj->Normal(pt);
+        return closestObj->material_shader->Shade_Surface(ray, *closestObj, pt, n);
+    }
 
     return color;
 }
