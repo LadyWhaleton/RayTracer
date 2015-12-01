@@ -1,0 +1,100 @@
+Name: Stephanie Tong
+CS130 Computer Graphics
+Fall 2015
+
+Project 2: Ray Tracing Documentation
+
+1. Phong_Shader::Shade_Surface()
+	In this function, we iterate through all of the light sources. 
+	What we are trying to do is to find the color on the surface of the
+	object by using the color combination of all light sources.
+	
+	Suppose that L_i represents the current light we're looking at.
+	We compute the specular (I_s), diffuse (I_d), and ambient (I_a) components 
+	for L_i and add them to color (which contains the color combination).
+	
+	To find I_d, we multiply diffuseCoefficient * lightColor_i * max (0, dot(l,n)).
+	dot(l,n) is the dot product of the incident vector l and surface normal n.
+	
+	To find I_s, I_s = specCoefficient * lightColor * max(0, v.r)^s. 
+	v is distance from ray origin/endpoint to surface point. r is the
+	reflected ray. 
+	
+2. Reflective_Shader::Shade_Surface()
+	In this function, we first find the light / incident color by calling
+	Phong_Shader::Shade_Surface(). 
+	
+	To find the incident ray's direction, we do intersection_point - ray.endpoint. 
+	To calculate the reflected ray direction, we use the equation 
+	incidentRayDirection - 2 * n * dot(incidentRayDirection, surfaceNormal). 
+	
+	Then using the intersection_point and the newly found reflected ray 
+	direction, we create a ray object that represents the reflected ray 
+	and cast it. This ray will attempt to "bounce" off any object it encounters
+	and return the reflected color of the object. 
+	
+	After that, we compute the actual reflected color by using the
+	reflected color from the previous step, multiply that by the reflectivity,
+	and add it to the incident color.
+	
+3. Sphere::Intersection()
+	To perform ray-sphere intersection, we use the quadratic formula 
+	to help find the roots for t. Recall that the quadratic formula 
+	is (-b +- sqrt(b-4ac)/(2a).
+	
+	To find a, b, and c:
+	a = (ray.direction)^2
+	b = 2*ray.direction * (ray.endpoint - center)
+	c = (ray.endpoint - center)^2 - r^2, where r is the radius of sphere
+	
+	Then by using a, b, and c, we can compute the discriminant:
+	b^2 - 4ac.
+	
+	If the discriminant < 0, there are no roots so we return false.
+	Otherwise, we try to find the smaller positive root (either t1 or t2) and
+	set it to t_max. If both roots are negative, then we return false.
+	
+	Then, we make one final check. We make sure that t > small_t. If it's true,
+	then we set t_max to t, ray.semi_infinite to false, and ray.current_object to this.
+	Finally, we return true.
+	
+4. Sphere::Normal()
+	All we need to do is set normal to location - center and normalize it.
+	
+5. Plane::Intersection()
+	To find the ray-plane intersection, we can use the formula:
+	t = ((a - o) * n) / (d * n)
+	
+	a = x1 (a point on the plane)
+	o = ray.endpoint
+	n = normal
+	d = ray.direction
+	
+	Then we check if t > small_t. If it is, we set ray.t_max to t,
+	ray.semi_infinite = false, and ray.current_object = this.
+	
+6. Camera::World_Position()
+	To get the world position of pixel_index, we first need to obtain
+	the grid coordinates of it. Then we convert the grid coordinates to
+	world position. Lastly, we shift it by the focal point.
+	
+7. Render_World::ClosestIntersection()
+	In this function, you iterate through the list of objects. If 
+	there's an intersection, you return ray.current_object. Otherwise, 
+	return 0.
+	
+8. Render_World::Render_Pixel()
+	In this function, you set up the ray representing the view ray. 
+	The origin/endpoint of the view ray is camera.position. The direction
+	of the view ray is the world position of pixel_index subtracted by
+	camera.position.
+	
+	We set view_ray.semi_infinite to true and view_ray.t_max to FLT_MAX.
+	
+9. Render_World::Cast_Ray()
+	First, we need to find the closest object to the ray. If there is 
+	a closest object found, we find the point representing ray.t_max.
+	We then find the normal n to the point. 
+	
+	After that, return the color of the closest intersected surface point
+	or the background color if there is no object intersection.
