@@ -39,7 +39,60 @@ Shade_Surface(const Ray& ray,const Object& intersection_object,const Vector_3D<d
     Vector_3D<double> color;
 
     // TODO: determine the color
-    // for i = 0 to numLights
+    // http://www.uio.no/studier/emner/matnat/ifi/INF3320/h03/undervisningsmateriale/lecture5.pdf
+    // https://steveharveynz.wordpress.com/category/programming/c-raytracer/
+    
+    // I = I_ambient + I_diffuse + I_specular
+    int numLights = world.lights.size();
+    
+    for (int i = 0; i < numLights; ++i)
+    {
+		Light* currLight = world.lights[i];
+		Vector_3D<double> currLightColor = currLight->Emitted_Light(ray);
+		
+		// ======================================================
+		// compute ambient component
+		// I_a = ambientCoefficient * lightColor
+		// ======================================================
+		Vector_3D <double> ambient = color_ambient * currLightColor;
+		
+		// ======================================================
+		// compute the diffuse component
+		// I_d = diffuseCoefficient * lightColor * max (0, l.n)
+		// ======================================================
+		
+		// l is the distance from the light source to the surface
+		Vector_3D<double> l = currLight->position - intersection_point;
+		l.Normalize();
+		
+		// I guess same_side_normal is surface normal, N
+		double lDotN = Vector_3D<double>::Dot_Product(l, same_side_normal); 
+		Vector_3D <double> diffuse = color_diffuse * currLightColor * max (0.0, lDotN);
+		
+		// ======================================================
+		// compute the specular component.
+		// I_s = specCoefficient * lightColor * max(0, v.r)^s
+		// http://ogldev.atspace.co.uk/www/tutorial19/tutorial19.html
+		// ======================================================
+		
+		// s is specular_power from Phong Shader class
+		// v is distance from ray origin/endpoint to surface point, the surface to camera
+		Vector_3D <double> v = ray.endpoint - intersection_point;
+		v.Normalize();
+		
+		// http://www.gameprogrammer.net/delphi3dArchive/phongfordummies.htm
+		// http://140.129.20.249/~jmchen/cg/docs/rendering%20pipeline/rendering/light_specular.html
+		// R = 2(N.L)N - L
+		Vector_3D <double> r = (same_side_normal * lDotN)*2 - l ; 
+		r.Normalize();
+		
+		double vDotR = Vector_3D<double>::Dot_Product(v, r);
+		double maxVal = max(0.0, vDotR);
+		Vector_3D <double> specular = color_specular * currLightColor * pow( maxVal, specular_power);
+		
+		color += diffuse + specular;
+		
+	}
 
     return color;
 }
@@ -132,7 +185,7 @@ Intersection(Ray& ray) const
     double t = top / bot;
     
     // if t > 0, ray towards plane and will eventually intersect it
-    // // t has to be bigger than small_t to register an intersection with a ray
+    // t has to be bigger than small_t to register an intersection with a ray
     if (t > small_t)
     {
 		ray.t_max = t;
