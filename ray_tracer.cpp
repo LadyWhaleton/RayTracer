@@ -49,6 +49,7 @@ Shade_Surface(const Ray& ray,const Object& intersection_object,const Vector_3D<d
     {
 		Light* currLight = world.lights[i];
 		Vector_3D<double> currLightColor = currLight->Emitted_Light(ray);
+		Vector_3D<double> adjustedIntersection = intersection_point + (same_side_normal * intersection_object.small_t);
 		
 		// ======================================================
 		// compute ambient component
@@ -62,7 +63,7 @@ Shade_Surface(const Ray& ray,const Object& intersection_object,const Vector_3D<d
 		// ======================================================
 		
 		// l is the distance from the light source to the surface
-		Vector_3D<double> l = currLight->position - intersection_point;
+		Vector_3D<double> l = currLight->position - adjustedIntersection;
 		l.Normalize();
 		
 		// I guess same_side_normal is surface normal, N
@@ -77,7 +78,7 @@ Shade_Surface(const Ray& ray,const Object& intersection_object,const Vector_3D<d
 		
 		// s is specular_power from Phong Shader class
 		// v is distance from ray origin/endpoint to surface point, the surface to camera
-		Vector_3D <double> v = ray.endpoint - intersection_point;
+		Vector_3D <double> v = ray.endpoint - adjustedIntersection;
 		v.Normalize();
 		
 		// http://www.gameprogrammer.net/delphi3dArchive/phongfordummies.htm
@@ -90,8 +91,30 @@ Shade_Surface(const Ray& ray,const Object& intersection_object,const Vector_3D<d
 		double maxVal = max(0.0, vDotR);
 		Vector_3D <double> specular = color_specular * currLightColor * pow( maxVal, specular_power);
 		
-		color += diffuse + specular;
+		// ======================================================
+		// Check if shadows are enabled, bool enable_shadow
+		// page 12 of:
+		// http://web.cse.ohio-state.edu/~hwshen/681/Site/Slides_files/shadow.pdf
+		// ======================================================
+		if (world.enable_shadows)
+		{
+			// Shadow ray's direction is parallel to the light
+			// Ray constructor parameters (endpoint/origin, direction)
+			Ray shadowRay (adjustedIntersection, currLight->position - adjustedIntersection);
+			int numObjects = world.objects.size();
+			
+			for (int i = 0; i < numObjects; ++i)
+			{
+				if (world.objects[i]->Intersection(shadowRay))
+					break;
+
+				else
+					color += diffuse + specular;
+			}
+		}
 		
+		else
+			color += diffuse + specular;
 	}
 
     return color;
@@ -238,12 +261,14 @@ Closest_Intersection(Ray& ray)
     // TODO: start
     // create a variable to hold the current closest object (initially infinity)
     int numObjects = objects.size();
+    bool hasIntersection = false;
 
     // for each object in the scene
     for (int i=0; i < numObjects; i++)
-        objects[i]->Intersection(ray);
-
-    return ray.current_object;
+        if (objects[i]->Intersection(ray)) hasIntersection = true;;
+	
+	if (hasIntersection) return ray.current_object;
+    return 0;
 }
 
 // set up the initial view ray and call 
