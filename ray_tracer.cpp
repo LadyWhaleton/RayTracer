@@ -156,7 +156,7 @@ Intersection(Ray& ray) const
     // http://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
     // https://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter1.htm
     // http://www.sfdm.scad.edu/faculty/mkesson/vsfx419/wip/best/winter12/jonathan_mann/raytracer.html
-    // a = D^2, b = 2D(O-C), c = |O - C|^2 - r^2
+    // a = D^2, b = 2D(O-C), c = (O - C)^2 - r^2
     double a = Vector_3D <double>::Dot_Product(ray.direction, ray.direction);
     double b = 2 * Vector_3D <double>:: Dot_Product(ray.direction, ray.endpoint - center); 
     double c = Vector_3D <double>::Dot_Product(ray.endpoint - center, ray.endpoint - center) - radius*radius; 
