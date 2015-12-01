@@ -38,7 +38,6 @@ Shade_Surface(const Ray& ray,const Object& intersection_object,const Vector_3D<d
 {
     Vector_3D<double> color;
 
-    // TODO: determine the color
     // http://www.uio.no/studier/emner/matnat/ifi/INF3320/h03/undervisningsmateriale/lecture5.pdf
     // https://steveharveynz.wordpress.com/category/programming/c-raytracer/
     
@@ -105,9 +104,9 @@ Shade_Surface(const Ray& ray,const Object& intersection_object,const Vector_3D<d
 			
 			for (int i = 0; i < numObjects; ++i)
 			{
+				// if shadowRay intersects with object, color = ambient + 0.0 + 0.0
 				if (world.objects[i]->Intersection(shadowRay))
 					break;
-
 				else
 					color += diffuse + specular;
 			}
@@ -123,10 +122,21 @@ Shade_Surface(const Ray& ray,const Object& intersection_object,const Vector_3D<d
 Vector_3D<double> Reflective_Shader::
 Shade_Surface(const Ray& ray,const Object& intersection_object,const Vector_3D<double>& intersection_point,const Vector_3D<double>& same_side_normal) const
 {
-    Vector_3D<double> color;
-    // TODO: determine the color
-
-    return color;
+	// http://paulbourke.net/geometry/reflected/
+    Vector_3D<double> incidentColor = Phong_Shader::Shade_Surface(ray, intersection_object, intersection_point, same_side_normal);
+	Vector_3D<double> adjustedIntersection = intersection_point + (same_side_normal * intersection_object.small_t);
+	Vector_3D<double> incidentDir = intersection_point - ray.endpoint;
+	
+	Vector_3D<double> reflectedRayDir = incidentDir - same_side_normal * 2 * Vector_3D<double>::Dot_Product(incidentDir, same_side_normal); 
+	
+	// ray constructor (endpoint, direction)
+	Ray reflectedRay(adjustedIntersection, reflectedRayDir);
+	
+	Ray dummy_ray;
+	Vector_3D<double> reflectedColor = world.Cast_Ray(reflectedRay, dummy_ray);
+	reflectedColor = reflectedColor * reflectivity + incidentColor;
+	
+    return reflectedColor;
 }
 
 Vector_3D<double> Flat_Shader::
@@ -143,7 +153,6 @@ Shade_Surface(const Ray& ray,const Object& intersection_object,const Vector_3D<d
 bool Sphere::
 Intersection(Ray& ray) const
 {
-    // TODO
     // http://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
     // https://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter1.htm
     // http://www.sfdm.scad.edu/faculty/mkesson/vsfx419/wip/best/winter12/jonathan_mann/raytracer.html
@@ -198,7 +207,6 @@ Normal(const Vector_3D<double>& location) const
 bool Plane::
 Intersection(Ray& ray) const
 {
-    // TODO
     // https://www.cs.princeton.edu/courses/archive/fall00/cs426/lectures/raycast/sld017.htm
     // http://www.prinmath.com/csci5229/Sp11/handouts/obj-ray-inter.pdf
     // (a - o) * n / (d * n), o = endpoint, d = direction, n = normal
@@ -233,7 +241,6 @@ Normal(const Vector_3D<double>& location) const
 Vector_3D<double> Camera::
 World_Position(const Vector_2D<int>& pixel_index)
 {
-    // TODO 
     // We are essentially converting screen/camera space to world space
  
     // Need to get the grid location of pixel_index (x and y coords)
@@ -258,7 +265,6 @@ Closest_Intersection(Ray& ray)
 {
     //cout << "Looking for closest intersection!\n";
 
-    // TODO: start
     // create a variable to hold the current closest object (initially infinity)
     int numObjects = objects.size();
     bool hasIntersection = false;
@@ -275,7 +281,6 @@ Closest_Intersection(Ray& ray)
 void Render_World::
 Render_Pixel(const Vector_2D<int>& pixel_index)
 {
-    // TODO: start
     // set up the initial view ray here
     Ray ray (camera.position, camera.World_Position(pixel_index) - camera.position);
 	ray.t_max = FLT_MAX;
@@ -291,7 +296,6 @@ Render_Pixel(const Vector_2D<int>& pixel_index)
 Vector_3D<double> Render_World::
 Cast_Ray(Ray& ray,const Ray& parent_ray)
 {
-    // TODO: start
     Vector_3D<double> color;
     const Object* closestObj = Closest_Intersection(ray);
 
